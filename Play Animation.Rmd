@@ -217,7 +217,7 @@ ggplot(full_sample, aes(x = pff_man))
 
 ```
 
-## add markers for `event` and plot & save all plays
+## add markers for `event` and animate & save all plays
 ```{r}
 plot1 <- ggplot(p1, aes(x = x, y = y, color = club)) +
             geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,

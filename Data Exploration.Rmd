@@ -113,7 +113,7 @@ defense_counts <- plays %>%
 defense_counts <- defense_counts %>%
   mutate(percentage = n / sum(n) * 100)
 
-ggplot(defense_counts, aes(x = "", y = n, fill = pff_manZone)) +
+defense_dist <- ggplot(defense_counts, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "Distribution of Defense", 
@@ -122,6 +122,8 @@ ggplot(defense_counts, aes(x = "", y = n, fill = pff_manZone)) +
     theme(legend.position = "right") +
     geom_text(aes(label = paste0(round(percentage, 1), "%")), 
             position = position_stack(vjust = 0.5))
+
+ggsave("defense_dist_pie_chart.jpeg", plot = defense_dist)
 ```
 
 # FILTER FOR JUST MAN & ZONE
