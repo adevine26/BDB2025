@@ -19,9 +19,16 @@ library(nflplotR)
 ```{r}
 plays <- read_csv("plays.csv")
 
-track_w2 <- read_csv("tracking_week_2.csv")
-track_w3 <- read_csv("tracking_week_3.csv")
-track_w6 <- read_csv("tracking_week_6.csv")
+track_season <- data.table()
+for(i in seq(1,9)) {
+    temp <- fread(paste0("data/tracking_week_", i, ".csv"))
+    track_season <- rbind(temp, track_season)
+}
+
+rm(temp, i)
+data.frame(track_season)
+
+gc()
 ```
 
 ## select random plays
