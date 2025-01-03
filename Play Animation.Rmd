@@ -1,0 +1,440 @@
+---
+title: "Play Animations"
+author: "Amelie Devine"
+date: "2024-10-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(gganimate)
+library(sportyR)
+library(nflplotR)
+```
+
+
+## read in data
+```{r}
+plays <- read_csv("plays.csv")
+
+track_w2 <- read_csv("tracking_week_2.csv")
+track_w3 <- read_csv("tracking_week_3.csv")
+track_w6 <- read_csv("tracking_week_6.csv")
+```
+
+## select random plays
+```{r}
+filtered_plays <- plays %>% 
+    filter(down == 1 | down == 2) %>% 
+    filter(yardsToGo < 15 & yardsToGo > 4)
+
+random <- filtered_plays %>% 
+    sample_n(5) # selects new random each time
+```
+
+## filter for random plays
+```{r}
+sample_plays <- plays %>%  # these are 5 random initially selected that i like
+    filter(gameId %in% c(2022092513, 2022091805, 2022091806, 2022101609, 2022101605) 
+           & playId %in% c(736, 773, 3030, 1803, 1143)
+           & possessionTeam %in% c('DEN', 'CAR', 'NE', 'SEA', 'NO'))
+
+p1 <- track_season %>% 
+    filter(gameId == 2022091805 & playId == 773) %>% 
+    left_join(sample_plays, by = c("playId", "gameId"))
+
+p2 <- track_season %>% 
+    filter(gameId == 2022091806 & playId == 3030) %>% 
+    left_join(sample_plays, by = c("playId", "gameId"))
+
+
+p3 <- track_season %>% 
+    filter(gameId == 2022092513 & playId == 736) %>% 
+    left_join(sample_plays, by = c("playId", "gameId"))
+
+
+p4 <- track_season %>% 
+    filter(gameId == 2022101605 & playId == 1143) %>% 
+    left_join(sample_plays, by = c("playId", "gameId"))
+
+
+p5 <- track_season %>% 
+    filter(gameId == 2022101609 & playId == 1803) %>% 
+    left_join(sample_plays, by = c("playId", "gameId"))
+```
+
+
+```{r}
+before_p1 <- p1 %>% 
+    filter(frameType == "BEFORE_SNAP")
+
+before_p2 <- p2 %>% 
+    filter(frameType == "BEFORE_SNAP")
+
+before_p3 <- p3 %>% 
+    filter(frameType == "BEFORE_SNAP")
+
+before_p4 <- p4 %>% 
+    filter(frameType == "BEFORE_SNAP")
+
+before_p5 <- p5 %>% 
+    filter(frameType == "BEFORE_SNAP")
+
+snap_p1 <- p1 %>% 
+    filter(event == "ball_snap")
+
+snap_p2 <- p2 %>% 
+    filter(event == "ball_snap")
+
+snap_p3 <- p3 %>% 
+    filter(event == "ball_snap")
+
+snap_p4 <- p4 %>% 
+    filter(event == "ball_snap")
+
+snap_p5 <- p5 %>% 
+    filter(event == "ball_snap")
+```
+
+
+# try plotting play 1
+```{r}
+los_p1 <- snap_p1 %>% 
+    filter(club=="football") %>% 
+    select(x, y)
+
+ggplot(snap_p1, aes(x=x, y=y, color=club)) +
+    geom_point() +
+    geom_vline(xintercept=los_p1$x, linetype="dotted") +
+    labs(title = "Play 1 @ Snap of Ball",
+         x = "X Position",
+         y = "Y Position", 
+         color = "Team") +
+    scale_x_continuous(limits = c(0, 120),
+                       breaks = seq(0, 120, by=10)) +
+    scale_y_continuous(limits = c(0, 53.3)) +
+    theme_minimal()
+```
+
+# try plotting play 2
+```{r}
+los_p2 <- snap_p2 %>% 
+    filter(club=="football") %>% 
+    select(x, y)
+
+ggplot(snap_p2, aes(x=x, y=y, color=club)) +
+    geom_point() +
+    geom_vline(xintercept=los_p2$x, linetype="dotted") +
+    labs(title = "Play 2 @ Snap of Ball",
+         x = "X Position",
+         y = "Y Position", 
+         color = "Team") +
+    scale_x_continuous(limits = c(0, 120),
+                       breaks = seq(0, 120, by=10)) +
+    scale_y_continuous(limits = c(0, 53.3)) +
+    theme_minimal()
+```
+
+# try plotting play 3
+```{r}
+los_p3 <- snap_p3 %>% 
+    filter(club=="football") %>% 
+    select(x, y)
+
+ggplot(snap_p3, aes(x=x, y=y, color=club)) +
+    geom_point() +
+    geom_vline(xintercept=los_p3$x, linetype="dotted") +
+    labs(title = "Play 3 @ Snap of Ball",
+         x = "X Position",
+         y = "Y Position", 
+         color = "Team") +
+    scale_x_continuous(limits = c(0, 120),
+                       breaks = seq(0, 120, by=10)) +
+    scale_y_continuous(limits = c(0, 53.3)) +
+    theme_minimal()
+```
+
+
+# try plotting play 4
+```{r}
+los_p4 <- snap_p4 %>% 
+    filter(club=="football") %>% 
+    select(x, y)
+
+ggplot(snap_p4, aes(x=x, y=y, color=club)) +
+    geom_point() +
+    geom_vline(xintercept=los_p4$x, linetype="dotted") +
+    labs(title = "Play 4 @ Snap of Ball",
+         x = "X Position",
+         y = "Y Position", 
+         color = "Team") +
+    scale_x_continuous(limits = c(0, 120),
+                       breaks = seq(0, 120, by=10)) +
+    scale_y_continuous(limits = c(0, 53.3)) +
+    theme_minimal()
+```
+
+
+# try plotting play 5
+```{r}
+los_p5 <- snap_p5 %>% 
+    filter(club=="football") %>% 
+    select(x, y)
+
+ggplot(snap_p5, aes(x=x, y=y, color=club)) +
+    geom_point() +
+    geom_vline(xintercept=los_p5$x, linetype="dotted") +
+    labs(title = "Play 5 @ Snap of Ball",
+         x = "X Position",
+         y = "Y Position", 
+         color = "Team") +
+    scale_x_continuous(limits = c(0, 120),
+                       breaks = seq(0, 120, by=10)) +
+    scale_y_continuous(limits = c(0, 53.3)) +
+    theme_minimal()
+```
+
+# What is the defense in???
+```{r}
+full_sample <- rbind(p1, p2, p3, p4, p5)
+
+man <- full_sample %>% 
+    filter(pff_manZone == "Man")
+
+zone <- full_sample %>% 
+    filter(pff_manZone == "Zone")
+
+ggplot(full_sample, aes(x = pff_man))
+
+```
+
+## add markers for `event` and plot & save all plays
+```{r}
+plot1 <- ggplot(p1, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 2, state_length = 2, wrap = FALSE) +
+            ease_aes('linear')
+
+p1_anim <- animate(plot1, fps = 10, width = 800, height = 450, renderer = gifski_renderer())
+anim_save("nfl_play1_animation_with_field.gif", p1_anim)
+
+plot2 <- ggplot(p2, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 2, state_length = 2, wrap = FALSE) +
+            ease_aes('linear')
+
+p2_anim <- animate(plot2, fps = 10, width = 800, height = 450, renderer = gifski_renderer())
+anim_save("nfl_play2_animation_with_field.gif", p2_anim)
+
+plot3 <- ggplot(p3, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 2, state_length = 2, wrap = FALSE) +
+            ease_aes('linear')
+
+p3_anim <- animate(plot3, fps = 10, width = 800, height = 450, renderer = gifski_renderer())
+anim_save("nfl_play3_animation_with_field.gif", p3_anim)
+
+plot4 <- ggplot(p4, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 2, state_length = 2, wrap = FALSE) +
+            ease_aes('linear')
+
+plot4
+
+p4_anim <- animate(plot4, fps = 10, width = 800, height = 450, renderer = gifski_renderer())
+anim_save("nfl_play4_animation_with_field.gif", p4_anim)
+
+plot5 <- ggplot(p5, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 2, state_length = 2, wrap = FALSE) +
+            ease_aes('linear')
+
+p5_anim <- animate(plot5, fps = 10, width = 800, height = 450, renderer = gifski_renderer())
+anim_save("nfl_play5_animation_with_field.gif", p5_anim)
+```
+
+
+
+# plot best & worst plays
+```{r, include=FALSE}
+track_season <- track_season %>% 
+    mutate(gamePlayId = paste0(gameId, playId))
+```
+
+#### lowest prob, true negative: 20221009033841 (pred zone, actual zone)
+```{r}
+tn_low <- track_season %>% 
+    filter(gamePlayId == 20221009033841) %>% 
+    left_join(plays, by = c("playId", "gameId"))
+
+ggplot(tn_low, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            geom_text(aes(x = 110, y = 50, label = event), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 4, state_length = 4, wrap = FALSE) +
+            ease_aes('linear')
+```
+
+#### highest prob, true positive: 20221010001500 (pred man, actual man)
+```{r}
+tp_high <- track_season %>% 
+    filter(gamePlayId == 20221010001500) %>% 
+    left_join(plays, by = c("playId", "gameId"))
+
+ggplot(tp_high, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            geom_text(aes(x = 110, y = 50, label = event), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 4, state_length = 4, wrap = FALSE) +
+            ease_aes('linear')
+
+## LB clearly follows WR in motion
+```
+
+#### highest prob, false positive: 2022101606340 (pred man, actual zone)
+```{r}
+fp_high <- track_season %>% 
+    filter(gamePlayId == 2022101606340) %>% 
+    left_join(plays, by = c("playId", "gameId"))
+
+ggplot(fp_high, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            geom_text(aes(x = 110, y = 50, label = event), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 4, state_length = 4, wrap = FALSE) +
+            ease_aes('linear')
+
+## LB follows WR in motion
+```
+
+#### lowest prob, false negative: 20221023032512 (pred zone, actual man)
+```{r}
+fn_low <- track_season %>% 
+    filter(gamePlayId == 20221023032512) %>% 
+    left_join(plays, by = c("playId", "gameId"))
+
+ggplot(fn_low, aes(x = x, y = y, color = club)) +
+            geom_rect(xmin = 0, xmax = 120, ymin = 0, ymax = 53.3,
+                      fill = "darkgreen", color = "white", alpha = 0.2) +
+            geom_vline(xintercept = seq(10, 110, by = 10), color = "white", linetype = "solid") +
+            geom_segment(data = data.frame(x = rep(1:119, each = 2),
+                                           y = rep(c(11, 42.3), times = 119)),
+                         aes(x = x, xend = x, y = y, yend = y + 1), color = "white") +
+            geom_point(aes(size = ifelse(is.na(nflId), 4, 2)), alpha = 0.8) +
+            geom_text(aes(label = ifelse(is.na(nflId), "Football", jerseyNumber)),
+                      vjust = -1, hjust = 0.5, color = "black", size = 3) +
+            geom_text(aes(x = 60, y = 50, label = frameType), color = "gray", size = 6) +
+            geom_text(aes(x = 10, y = 50, label = pff_manZone), color = "gray", size = 5) +
+            geom_text(aes(x = 110, y = 50, label = event), color = "gray", size = 5) +
+            scale_size_identity() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            transition_states(frameId, transition_length = 4, state_length = 4, wrap = FALSE) +
+            ease_aes('linear')
+
+## CB follows a little but not much
+```
+
