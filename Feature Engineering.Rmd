@@ -1,0 +1,364 @@
+---
+title: "Feature Engineering"
+author: "Amelie Devine"
+date: "2024-12-23"
+output: html_document
+---
+
+## libraries
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(data.table)
+```
+
+## read in data
+```{r, include=FALSE}
+games <- fread("data/games.csv", data.table=FALSE)
+plays <- fread("data/plays.csv", data.table=FALSE)
+players <- fread("data/players.csv", data.table=FALSE)
+player_stats <- fread("data/player_play.csv", data.table=FALSE)
+
+track_season <- data.table()
+for(i in seq(1,9)) {
+    temp <- fread(paste0("data/tracking_week_", i, ".csv"))
+    track_season <- rbind(temp, track_season)
+}
+
+rm(temp, i)
+data.frame(track_season)
+
+gc()
+```
+
+## filter plays
+```{r}
+plays <- plays %>% 
+    select(c("gameId", "playId", "quarter", "down", "yardsToGo", "possessionTeam", "defensiveTeam",
+             "yardlineSide", "yardlineNumber", "gameClock", "preSnapHomeScore", "preSnapVisitorScore",
+             "absoluteYardlineNumber", "offenseFormation", "receiverAlignment", "playClockAtSnap",
+             "qbSpike", "qbKneel", "pff_passCoverage", "pff_manZone"))
+
+plays <- plays %>% 
+    mutate(gamePlayId = paste0(gameId, playId),
+           receiverAlignment = as.numeric(str_replace_all(receiverAlignment, "x", "")),
+           receiverAlignment = case_when(
+               receiverAlignment %in% c(32, 31, 41, 21, 20, 30, 10, 42) ~ "odd",
+               TRUE ~ "even"
+           )) %>% 
+    left_join(games %>% select(gameId, homeTeamAbbr, visitorTeamAbbr), by=c("gameId")) %>%
+    mutate(gameClockSeconds = as.numeric(substr(gameClock, 1, 2)) * 60 + as.numeric(substr(gameClock, 4, 5)),
+           preSnapScoreDiff = abs(preSnapHomeScore - preSnapVisitorScore),
+           PreSnapWinner = ifelse(preSnapHomeScore > preSnapVisitorScore, homeTeamAbbr, visitorTeamAbbr),
+           garbageTime = case_when(
+               quarter == 4 & gameClockSeconds <= 240 & preSnapScoreDiff >= 21 ~ TRUE,
+               quarter == 4 & gameClockSeconds <= 120 & preSnapScoreDiff >= 14 ~ TRUE,
+               TRUE ~ FALSE)) %>% 
+    filter(garbageTime == FALSE,
+           qbSpike != TRUE,
+           qbKneel != 1,
+           down %in% c(3,4)) %>% 
+           # yardsToGo > 3) %>% ## 3rd # short is actually more even split than you would think
+           # !(down %in% c(3, 4) & yardsToGo < 3)) %>% 
+    select(-c("garbageTime")) %>% 
+    mutate(
+        offenseScore = case_when(
+            possessionTeam == homeTeamAbbr ~ preSnapHomeScore,
+            possessionTeam == visitorTeamAbbr ~ preSnapVisitorScore,
+            TRUE ~ NA_real_),
+        defenseScore = case_when(
+            possessionTeam == homeTeamAbbr ~ preSnapVisitorScore,
+            possessionTeam == visitorTeamAbbr ~ preSnapHomeScore,
+            TRUE ~ NA_real_),
+        offenseAhead = case_when(
+            offenseScore > defenseScore ~ TRUE,
+            TRUE ~ FALSE),
+        tieGame = case_when(
+            offenseScore == defenseScore ~ TRUE,
+            TRUE ~ FALSE)
+    ) %>% 
+    select(-c("offenseScore", "defenseScore", "PreSnapWinner", "pff_passCoverage", "qbKneel", "qbSpike", 
+              "homeTeamAbbr", "visitorTeamAbbr")) %>% 
+    mutate(
+        territoryOffense = case_when(
+            possessionTeam == yardlineSide ~ TRUE,
+            TRUE ~ FALSE)
+        ) %>% 
+    filter(pff_manZone == "Man" | pff_manZone == "Zone")
+
+gc()
+
+player_stats <- player_stats %>% 
+    select(c("gameId", "playId", "nflId", "teamAbbr", "inMotionAtBallSnap", 
+             "shiftSinceLineset", "motionSinceLineset")) %>% 
+    mutate(gamePlayId = paste0(gameId, playId))
+
+players <- players %>% 
+    mutate(position_group = case_when(
+            position %in% c("ILB", "OLB", "MLB", "LB") ~ "LB", 
+            position %in% c("DT", "DE", "NT") ~ "DL",
+            position %in% c("SS", "FS", "DB") ~ "S",
+            position %in% c("CB") ~ "CB", 
+            position %in% c("G", "C", "T") ~ "OL",
+            position %in% c("RB", "FB") ~ "RB",
+            position %in% c("WR") ~ "WR",
+            position %in% c("TE") ~ "TE",
+            TRUE ~ "QB")) %>% 
+    select(nflId, position, position_group)
+
+gc()
+
+player_stats <- player_stats %>%
+    filter(gamePlayId %in% plays$gamePlayId) %>%
+    left_join(players, by=c("nflId"))   
+ 
+rm(players)
+gc()
+```
+
+## filter to plays i care about
+```{r}
+track_season <- track_season %>% 
+    mutate(gamePlayId = paste0(gameId, playId)) %>% 
+    filter(gamePlayId %in% plays$gamePlayId)
+```
+
+## ball position
+```{r}
+ball_position <- track_season %>% 
+    filter(is.na(nflId)) %>% 
+    select(gameId, playId, frameId, x, y) %>% 
+    rename(ball_x = x, ball_y = y)
+
+gc()
+```
+
+## filter to just players & at ball snap 
+```{r}
+track_season <- track_season %>% 
+    filter(!is.na(nflId),
+           frameType != "AFTER_SNAP") 
+gc()
+
+ballsnap <- track_season %>% 
+    filter(event == "ball_snap") %>%
+    select(-c("displayName", "frameType", "jerseyNumber"))
+gc()
+```
+
+
+
+## join all data!
+```{r}
+ballsnap <- ballsnap %>% 
+    left_join(player_stats, by=c("gameId", "playId", "nflId")) %>% 
+    left_join(plays, by=c("gameId", "playId")) %>% 
+    left_join(ball_position, by=c("gameId", "playId", "frameId")) %>% 
+    select(-c("gamePlayId.x", "gamePlayId.y", "frameId"))
+
+gc()
+```
+
+
+## drop DL
+```{r}
+ballsnap <- ballsnap %>% 
+    filter(position_group != "DL")
+
+gc()
+```
+
+## side of ball & motion indicators
+```{r}
+ballsnap <- ballsnap %>% 
+    mutate(
+        side_of_ball = case_when(
+            club == possessionTeam ~ "Offense",
+            TRUE ~ "Defense"
+        ),
+        xFromBall = x - ball_x,
+        yFromBall = y - ball_y)
+
+ballsnap <- ballsnap %>% 
+    group_by(gameId, playId) %>%
+    mutate(
+        offInMotionAtBallSnap = any(inMotionAtBallSnap == TRUE, na.rm = TRUE),
+        offShiftSinceLineset = any(shiftSinceLineset == TRUE, na.rm = TRUE),
+        offMotionSinceLineset = any(motionSinceLineset == TRUE, na.rm = TRUE),
+        ) %>% 
+    ungroup()
+
+gc()
+```
+
+## filter for only defense & create unique IDs
+```{r}
+defense <- ballsnap %>%
+    filter(side_of_ball == "Defense") %>% 
+    add_count(gameId, playId, position_group, name = "player_count") %>% 
+    mutate(
+        depth = abs(round(x - ball_x)),
+           depthType = case_when(
+               depth > 10 ~ "Deep",
+               TRUE ~ "Shallow"
+           ),
+        side_relative_to_ball = case_when( 
+            x < ball_x ~ "Left", 
+            x > ball_x ~ "Right",  
+            TRUE ~ "Center" 
+    ),
+    position_label = paste0(position_group)  
+  ) 
+
+gc()
+```
+
+## add delta's
+```{r}
+events <- track_season %>% 
+    filter(event %in% c("line_set", "ball_snap"))  %>% 
+    select(-c("displayName", "frameType", "jerseyNumber")) %>% 
+    left_join(player_stats, by=c("gameId", "playId", "nflId")) %>% 
+    left_join(plays, by=c("gameId", "playId")) %>% 
+    left_join(ball_position, by=c("gameId", "playId", "frameId"))  %>% 
+    select(-c("gamePlayId.x", "gamePlayId.y", "frameId"))
+
+deltas <- events %>% 
+    mutate(xFromBall = x - ball_x,
+           yFromBall = y - ball_y) %>% 
+    arrange(gameId, playId, nflId, time) %>% 
+    group_by(gameId, playId, nflId) %>% 
+    mutate(
+        deltaX = xFromBall - lag(xFromBall,1),
+        deltaY = yFromBall - lag(yFromBall,1),
+        distanceSinceLineset = sqrt(deltaX^2 + deltaY^2)
+    ) %>% 
+    filter(is.na(deltaX) == FALSE) %>% 
+    select(gameId, playId, nflId, position_group, deltaX, deltaY, distanceSinceLineset, pff_manZone) %>% 
+    distinct() %>% 
+    filter(position_group %in% c("DL", "LB", "CB", "S"))
+
+rm(events)
+gc()
+
+def_movement <- deltas %>% 
+    group_by(gameId, playId, position_group) %>% 
+    summarize(avgDeltaX = mean(deltaX, na.rm = TRUE), # do i need to do abs(deltaX) for mean???
+              avgDeltaY = mean(deltaY, na.rm = TRUE),
+              avgDistanceSinceLineset = mean(distanceSinceLineset, na.rm = TRUE),
+              .groups = "drop") %>% 
+    mutate(
+        xShift = case_when(
+            abs(avgDeltaX) > 5 ~ TRUE, 
+            TRUE ~ FALSE
+        ),
+        yShift = case_when(
+            abs(avgDeltaY) > 3 ~ TRUE,
+            TRUE ~ FALSE
+        ),
+        distanceShift = case_when(
+            abs(avgDistanceSinceLineset) > 6 ~ TRUE,
+            TRUE ~ FALSE
+        )
+    ) %>% 
+    pivot_wider(
+        names_from = position_group,
+        values_from = c(avgDeltaX, avgDeltaY, avgDistanceSinceLineset, xShift, yShift, distanceShift),
+        names_glue = "{position_group}_{.value}",
+        values_fill = 0
+    )
+
+# rm(deltas)
+gc()
+```
+
+## remove irrelevant dfs
+```{r}
+rm(player_stats, plays, games)
+```
+
+## create/add position counts 
+```{r}
+position_counts <- defense %>%
+  group_by(gameId, playId, position_group) %>%
+  summarise(num_players = n(), .groups = "drop")  
+position_counts_wide <- position_counts %>%
+  pivot_wider(
+    names_from = position_group,
+    values_from = num_players,
+    names_prefix = "num_",
+    values_fill = 0  
+  )
+
+rm(position_counts)
+gc()
+```
+
+
+## make wider
+```{r}
+def_wide <- defense %>%
+  group_by(gameId, playId, position_label) %>%
+  summarise(
+    across(c(xFromBall, yFromBall, s, dis, depth), ~ mean(.x, na.rm = TRUE)),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    names_from = position_label,
+    values_from = c(xFromBall, yFromBall, s, dis, depth),
+    names_glue = "{position_label}_{.value}"
+  )
+
+rm(defense)
+gc()
+
+final_data <- ballsnap %>%
+    filter(side_of_ball == "Offense") %>% 
+    distinct(gameId, playId, .keep_all = TRUE) %>% 
+    left_join(position_counts_wide, by = c("gameId", "playId")) %>% 
+    left_join(def_wide, by = c("gameId", "playId")) %>% 
+    left_join(def_movement, by=c("gameId", "playId"))
+
+rm(def_wide)
+gc()
+
+final_data <- final_data %>% 
+    mutate(
+        CB_followOffMovement = case_when(
+            CB_yShift == TRUE & offInMotionAtBallSnap == TRUE ~ TRUE,
+            CB_yShift == TRUE & offMotionSinceLineset == TRUE ~ TRUE,
+            CB_yShift == TRUE & offShiftSinceLineset == TRUE ~ TRUE,
+            TRUE ~ FALSE),
+        LB_followOffMovement = case_when(
+            LB_yShift == TRUE & offInMotionAtBallSnap == TRUE ~ TRUE,
+            LB_yShift == TRUE & offMotionSinceLineset == TRUE ~ TRUE,
+            LB_yShift == TRUE & offShiftSinceLineset == TRUE ~ TRUE,
+            TRUE ~ FALSE),
+        S_followOffMovement = case_when(
+            S_yShift == TRUE & offInMotionAtBallSnap == TRUE ~ TRUE,
+            S_yShift == TRUE & offMotionSinceLineset == TRUE ~ TRUE,
+            S_yShift == TRUE & offShiftSinceLineset == TRUE ~ TRUE,
+            TRUE ~ FALSE) 
+        ) %>%
+    select(-c("nflId", "club", "x", "y", "s", "a", "dis", "o", "dir", "teamAbbr", "inMotionAtBallSnap",
+              "shiftSinceLineset", "motionSinceLineset", "position", "position_group", 
+              "gameId", "playId", "time", "gameClock", "playClockAtSnap", "side_of_ball", 
+              "possessionTeam", "defensiveTeam", "absoluteYardlineNumber",
+              "yardlineSide", "preSnapHomeScore", "preSnapVisitorScore", "xFromBall", "yFromBall", 
+              "preSnapScoreDiff", "offInMotionAtBallSnap", "offMotionSinceLineset", "offShiftSinceLineset",
+              "offenseFormation", "playDirection", "down"))
+
+gc()
+```
+
+## remove irrelevant dfs!
+```{r}
+rm(ball_position, position_counts_wide)
+```
+
+## save `final_data` csv
+```{r}
+write.csv(final_data, "data/final_data.csv")
+```
+

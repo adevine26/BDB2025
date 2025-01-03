@@ -1,0 +1,89 @@
+---
+title: "Model Results"
+author: "Amelie Devine"
+date: "2025-01-01"
+output: html_document
+---
+
+## counts of man v zone
+```{r}
+final <- final_data %>%
+    count(pff_manZone) %>% 
+    mutate(percentage = n / sum(n) * 100)
+
+
+ggplot(final, aes(x = "", y = n, fill = pff_manZone)) +
+    geom_bar(stat = "identity", width = 1) + 
+    coord_polar("y") + 
+    labs(title = "Distribution of Defense", 
+         fill = "Defense Type") + 
+    theme_void() +
+    theme(legend.position = "right") +
+    geom_text(aes(label = paste0(round(percentage, 1), "%")), 
+            position = position_stack(vjust = 0.5))
+```
+
+## delta XY / distance plots
+```{r}
+noDL <- deltas %>% 
+    filter(position_group != "DL")
+
+ggplot(noDL, aes(x = distanceSinceLineset, color = position_group)) +
+  geom_density(size = 1, alpha = 0.6) +
+  theme_minimal() +
+  facet_wrap(~ pff_manZone, labeller = label_both) +
+  labs(title = "Density of Overall Movement (deltaDistance) by Defensive Scheme",
+       x = "deltaDistance (Overall Movement)",
+       y = "Density",
+       color = "Position Group") +
+  theme(legend.position = "top")
+```
+
+## use testing set
+```{r}
+predicted_probabilities <- predict(sig_model2, newdata = test, type = "response")
+predicted_classes <- ifelse(predicted_probabilities > 0.5, 1, 0)
+```
+
+## predicted probabilities for random play(s)
+```{r}
+test$Probability <- predict(sig_model2, newdata = test, type = "response")
+
+set.seed(1231) 
+random_plays <- test[sample(1:nrow(test), 10), ]
+
+results <- data.frame(
+  gamePlayId = random_plays$gamePlayId,
+  Actual = random_plays$pff_manZone,
+  Predicted_Probability = random_plays$Probability
+)
+ 
+# highprob_0 <- 20221103001112 
+# highprob_1 <- 20221013001781
+# lowprob_1 <- 20221002054341
+# lowprob_0 <- 20220925121799
+
+examples <- data.frame(
+    gamePlayId = test$gamePlayId,
+    pff_manZone = test$pff_manZone,
+    Pred_Probability = test$Probability,
+    num_CB = test$num_CB,
+    CB_distanceShift = test$CB_distanceShift,
+    LB_distanceShift = test$LB_distanceShift,
+    CB_depth = round(test$CB_depth, 1),
+    LB_depth = test$LB_depth,
+    S_depth = round(test$S_depth, 1)
+) %>% 
+    filter(gamePlayId %in% c(20221103001112, 20221013001781, 20221002054341, 20220925121799))
+
+bad_zone <- test %>% 
+    filter(gamePlayId == 20221103001112) %>% 
+    select(gamePlayId, pff_manZone, yardsToGo, territoryOffense, num_CB, CB_depth, LB_depth, S_depth,
+           CB_distanceShift, LB_distanceShift)
+    
+# lowest prob, true negative: 20221009033841
+# highest prob, true positive: 20221010001500
+# highest prob, false positive: 2022101606340
+# lowest prob, false negative: 20221023032512
+```
+
