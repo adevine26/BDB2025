@@ -59,8 +59,6 @@ plays <- plays %>%
            qbSpike != TRUE,
            qbKneel != 1,
            down %in% c(3,4)) %>% 
-           # yardsToGo > 3) %>% ## 3rd # short is actually more even split than you would think
-           # !(down %in% c(3, 4) & yardsToGo < 3)) %>% 
     select(-c("garbageTime")) %>% 
     mutate(
         offenseScore = case_when(
