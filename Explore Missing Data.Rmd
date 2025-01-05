@@ -1,0 +1,144 @@
+---
+title: "Explore Missing Data"
+author: "Amelie Devine"
+date: "2024-11-08"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+plays_full <- player_stats %>% 
+    left_join(players, by="nflId") %>% 
+    left_join(plays, by = )
+```
+
+
+```{r}
+colSums(is.na(games)) # no NAs
+colSums(is.na(players)) # only missing birthDate all gucci
+colSums(is.na(player_stats))
+    #penaltyNames, blockedPlayerNFLId3 all NA
+colSums(is.na(plays)) 
+    #yardlineSide NA means midfield
+colSums(is.na(track_season)) 
+
+
+```
+
+```{r}
+plays %>% 
+    filter(is.na(pff_manZone) & !is.na(offenseFormation))
+
+games %>% 
+    filter(gameId == 2022091804)
+
+track_season %>% 
+    filter(gameId == 2022091804 & playId == 3742 & frameType == "SNAP") 
+    # this is play missing playClockAtSnap
+
+test <- track_season %>% 
+    filter(is.na(event))
+
+table(track_season$event) # count of all possible events!
+
+track_season %>% 
+    filter(frameType == "AFTER_SNAP" & !is.na(event)) 
+
+before <- track_season %>% 
+    filter(frameType == "BEFORE_SNAP")
+
+after <- track_season %>% 
+    filter(frameType == "AFTER_SNAP")
+```
+
+
+
+```{r}
+penalty_yds <- player_stats %>% 
+    filter(penaltyYards != 0) %>% 
+    left_join(plays, by=c("gameId", "playId")) %>% 
+    mutate(penalty = ifelse(str_detect(playDescription, "PENALTY"),
+                                 str_extract(playDescription, "PENALTY on [^,]+,\\s([^,]+)"),
+                                 NA)) %>% 
+    mutate(penalty = str_remove(penalty, "PENALTY on [^,]+,\\s")) 
+# no pre-snap penalties, so probably don't care about them
+
+shifts <- player_stats %>% 
+    filter(is.na(shiftSinceLineset)) %>% 
+    left_join(plays, by=c("gameId", "playId"))
+```
+
+
+# checking NA in pff_manZone or pff_defensiveCoverageAssignment
+```{r}
+player_stats %>% 
+    left_join(plays, by=c("gameId", "playId")) %>% 
+    filter(is.na(pff_defensiveCoverageAssignment)) %>% 
+    select(playDescription, playId) %>% 
+    distinct(playId, .keep_all = TRUE)
+
+missing <- plays %>% 
+    filter(is.na(pff_manZone)) %>% 
+    select(playDescription, playId, gameId) %>% 
+    filter(!str_detect(playDescription, "(spiked|kneels)"))
+
+player_stats %>% 
+    filter(gameId %in% missing$gameId & playId %in% missing$playId) %>% 
+    select(gameId, playId, pff_defensiveCoverageAssignment) %>% 
+    filter(!is.na(pff_defensiveCoverageAssignment))
+
+player_stats %>% 
+    filter(gameId == 2022100909 & playId == 3401) %>% 
+    select(gameId, playId, nflId, teamAbbr, pff_defensiveCoverageAssignment)
+```
+
+# Investigate 'Other' in `pff_manZone`
+```{r}
+unique(presnap_defense$pff_manZone)
+
+other <- presnap_defense %>% 
+    filter(pff_manZone == "Other" & !is.na(pff_defensiveCoverageAssignment)) %>% 
+    select(playId, gameId, pff_manZone, pff_defensiveCoverageAssignment, playDescription) 
+
+unique(other$pff_defensiveCoverageAssignment)
+unique(player_stats$pff_defensiveCoverageAssignment)
+
+player_stats %>% 
+    filter(!(pff_defensiveCoverageAssignment %in% other$pff_defensiveCoverageAssignment)) %>% 
+    distinct(playId, .keep_all = TRUE) %>% 
+    unique(pff_defensiveCoverageAssignment)
+
+test <- plays %>% 
+    filter(pff_manZone == "Other")  
+    # select(playDescription, pff_passCoverage)
+unique(test$pff_passCoverage)
+test2 <- plays %>% 
+    filter(pff_manZone == "Man")
+unique(test2$pff_passCoverage)
+test3 <- plays %>% 
+    filter(pff_manZone == "Zone")
+unique(test3$pff_passCoverage)
+
+goalline <- test %>% 
+    filter(pff_passCoverage == "Goal Line")
+
+goalline <- goalline %>% 
+    left_join(pre_player_stats, by=c("gameId", "playId")) %>% 
+    select(gameId, playId, playDescription, pff_defensiveCoverageAssignment) %>% 
+    filter(!is.na(pff_defensiveCoverageAssignment)) 
+
+redzone <- redzone %>% 
+    left_join(pre_player_stats, by=c("gameId", "playId")) %>% 
+    select(gameId, playId, playDescription, pff_defensiveCoverageAssignment) %>% 
+    filter(!is.na(pff_defensiveCoverageAssignment))
+```
+
+# investigate qbSneak
+```{r}
+missing_sneak <- track_sample %>% 
+    filter(qbSneak == TRUE & yardsToGo != 1) %>% 
+    select(playId, playDescription, down, yardsToGo) %>% 
+    distinct(playId, .keep_all = TRUE) # na is not sneak
+    ## probably will just ignore this var
+```
+
