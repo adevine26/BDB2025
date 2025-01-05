@@ -21,7 +21,6 @@ library(MLmetrics)
 ## read in data
 ```{r}
 final_data <- fread("data/final_data.csv", data.table=FALSE)
-
 ```
 
 ## factor man/zone
@@ -343,5 +342,10 @@ draw_confusion_matrix(cm)
 ## code from https://stackoverflow.com/a/53235386
 ```
 
-
+## save files
+```{r}
+write.csv(final_data, "data/final_data.csv")
+write.csv(test, "data/test.csv")
+saveRDS(sig_model2, "data/model.rds")
+```
 

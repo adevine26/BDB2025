@@ -5,6 +5,14 @@ date: "2025-01-01"
 output: html_document
 ---
 
+## read in files
+```{r}
+final_data <- fread("data/final_data.csv", data.table=FALSE)
+test <- fread("data/test.csv", data.table=FALSE)
+my_model <- readRDS("data/model.rds")
+```
+
+
 ## counts of man v zone
 ```{r}
 final <- final_data %>%
