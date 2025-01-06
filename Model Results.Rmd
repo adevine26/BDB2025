@@ -7,8 +7,9 @@ output: html_document
 
 ## read in files
 ```{r}
-final_data <- fread("data/final_data.csv", data.table=FALSE)
-test <- fread("data/test.csv", data.table=FALSE)
+deltas <- fread("data/deltas.csv", data.table = FALSE)
+final_data <- fread("data/final_data.csv", data.table = FALSE)
+test <- fread("data/test.csv", data.table = FALSE)
 my_model <- readRDS("data/model.rds")
 ```
 
@@ -18,7 +19,6 @@ my_model <- readRDS("data/model.rds")
 final <- final_data %>%
     count(pff_manZone) %>% 
     mutate(percentage = n / sum(n) * 100)
-
 
 ggplot(final, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
@@ -30,7 +30,7 @@ ggplot(final, aes(x = "", y = n, fill = pff_manZone)) +
     theme(legend.position = "right") +
     geom_text(aes(label = paste0(round(percentage, 1), "%"),
                   color = "white"), 
-            position = position_stack(vjust = 0.5))
+              position = position_stack(vjust = 0.5))
 ```
 
 ## delta XY / distance plots
@@ -38,10 +38,8 @@ ggplot(final, aes(x = "", y = n, fill = pff_manZone)) +
 ggplot(deltas, aes(x = distanceSinceLineset, color = position_group)) +
     geom_density(size = 1, alpha = 0.6) +
     facet_wrap(~ pff_manZone, labeller = label_both) +
-    scale_color_manual(values = c("LB" = "#90adc6",
-                                  "DL" = "#787e8a",
-                                  "S" = "#fad02c", 
-                                  "CB" = "#333652")) +
+    scale_color_manual(values = c("LB" = "#90adc6", "DL" = "#787e8a",
+                                  "S" = "#fad02c", "CB" = "#333652")) +
     labs(title = "Density of Movement Since Lineset by Defensive Scheme",
          x = "Movement (deltaDistance)",
          y = "Density",
@@ -84,7 +82,7 @@ examples <- data.frame(
     CB_depth = round(test$CB_depth, 1),
     LB_depth = test$LB_depth,
     S_depth = round(test$S_depth, 1)
-) %>% 
+    ) %>% 
     filter(gamePlayId %in% c(20221103001112, 20221013001781, 20221002054341, 20220925121799))
 
 bad_zone <- test %>% 

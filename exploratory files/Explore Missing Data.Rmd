@@ -5,14 +5,6 @@ date: "2024-11-08"
 output: html_document
 ---
 
-
-```{r setup, include=FALSE}
-plays_full <- player_stats %>% 
-    left_join(players, by="nflId") %>% 
-    left_join(plays, by = )
-```
-
-
 ```{r}
 colSums(is.na(games)) # no NAs
 colSums(is.na(players)) # only missing birthDate all gucci
@@ -21,8 +13,6 @@ colSums(is.na(player_stats))
 colSums(is.na(plays)) 
     #yardlineSide NA means midfield
 colSums(is.na(track_season)) 
-
-
 ```
 
 ```{r}
@@ -52,7 +42,6 @@ after <- track_season %>%
 ```
 
 
-
 ```{r}
 penalty_yds <- player_stats %>% 
     filter(penaltyYards != 0) %>% 
@@ -65,14 +54,14 @@ penalty_yds <- player_stats %>%
 
 shifts <- player_stats %>% 
     filter(is.na(shiftSinceLineset)) %>% 
-    left_join(plays, by=c("gameId", "playId"))
+    left_join(plays, by = c("gameId", "playId"))
 ```
 
 
 # checking NA in pff_manZone or pff_defensiveCoverageAssignment
 ```{r}
 player_stats %>% 
-    left_join(plays, by=c("gameId", "playId")) %>% 
+    left_join(plays, by = c("gameId", "playId")) %>% 
     filter(is.na(pff_defensiveCoverageAssignment)) %>% 
     select(playDescription, playId) %>% 
     distinct(playId, .keep_all = TRUE)
@@ -110,11 +99,12 @@ player_stats %>%
 
 test <- plays %>% 
     filter(pff_manZone == "Other")  
-    # select(playDescription, pff_passCoverage)
 unique(test$pff_passCoverage)
+
 test2 <- plays %>% 
     filter(pff_manZone == "Man")
 unique(test2$pff_passCoverage)
+
 test3 <- plays %>% 
     filter(pff_manZone == "Zone")
 unique(test3$pff_passCoverage)
@@ -123,12 +113,12 @@ goalline <- test %>%
     filter(pff_passCoverage == "Goal Line")
 
 goalline <- goalline %>% 
-    left_join(pre_player_stats, by=c("gameId", "playId")) %>% 
+    left_join(pre_player_stats, by = c("gameId", "playId")) %>% 
     select(gameId, playId, playDescription, pff_defensiveCoverageAssignment) %>% 
     filter(!is.na(pff_defensiveCoverageAssignment)) 
 
 redzone <- redzone %>% 
-    left_join(pre_player_stats, by=c("gameId", "playId")) %>% 
+    left_join(pre_player_stats, by = c("gameId", "playId")) %>% 
     select(gameId, playId, playDescription, pff_defensiveCoverageAssignment) %>% 
     filter(!is.na(pff_defensiveCoverageAssignment))
 ```
@@ -141,4 +131,3 @@ missing_sneak <- track_sample %>%
     distinct(playId, .keep_all = TRUE) # na is not sneak
     ## probably will just ignore this var
 ```
-

@@ -7,21 +7,20 @@ output: html_document
 
 ## get `ballsnap` df ready
 ```{r, include=FALSE}
-games <- fread("games.csv", data.table=FALSE)
-plays <- fread("plays.csv", data.table=FALSE)
-players <- fread("players.csv", data.table=FALSE)
-player_stats <- fread("player_play.csv", data.table=FALSE)
+games <- fread("../data/games.csv", data.table=FALSE)
+plays <- fread("../data/plays.csv", data.table=FALSE)
+players <- fread("../data/players.csv", data.table=FALSE)
+player_stats <- fread("../data/player_play.csv", data.table=FALSE)
 
 track_season <- data.table()
 for(i in seq(1,9)) {
-    temp <- fread(paste0("tracking_week_", i, ".csv"))
+    temp <- fread(paste0("../data/tracking_week_", i, ".csv"))
     track_season <- rbind(temp, track_season)
 }
 
 rm(temp, i)
 data.frame(track_season)
 
-gc()
 plays <- plays %>% 
     select(c("gameId", "playId", "quarter", "down", "yardsToGo", "possessionTeam", "defensiveTeam",
              "yardlineSide", "yardlineNumber", "gameClock", "preSnapHomeScore", "preSnapVisitorScore",
@@ -35,7 +34,7 @@ plays <- plays %>%
                receiverAlignment %in% c(32, 31, 41, 21, 20, 30, 10, 42) ~ "odd",
                TRUE ~ "even"
            )) %>% 
-    left_join(games %>% select(gameId, homeTeamAbbr, visitorTeamAbbr), by=c("gameId")) %>%
+    left_join(games %>% select(gameId, homeTeamAbbr, visitorTeamAbbr), by = c("gameId")) %>%
     mutate(gameClockSeconds = as.numeric(substr(gameClock, 1, 2)) * 60 + as.numeric(substr(gameClock, 4, 5)),
            preSnapScoreDiff = abs(preSnapHomeScore - preSnapVisitorScore),
            PreSnapWinner = ifelse(preSnapHomeScore > preSnapVisitorScore, homeTeamAbbr, visitorTeamAbbr),
@@ -48,32 +47,27 @@ plays <- plays %>%
            qbKneel != 1,
            down %in% c(3,4)) %>% 
     select(-c("garbageTime")) %>% 
-    mutate(
-        offenseScore = case_when(
-            possessionTeam == homeTeamAbbr ~ preSnapHomeScore,
-            possessionTeam == visitorTeamAbbr ~ preSnapVisitorScore,
-            TRUE ~ NA_real_),
-        defenseScore = case_when(
-            possessionTeam == homeTeamAbbr ~ preSnapVisitorScore,
-            possessionTeam == visitorTeamAbbr ~ preSnapHomeScore,
-            TRUE ~ NA_real_),
-        offenseAhead = case_when(
-            offenseScore > defenseScore ~ TRUE,
-            TRUE ~ FALSE),
-        tieGame = case_when(
-            offenseScore == defenseScore ~ TRUE,
-            TRUE ~ FALSE)
-    ) %>% 
+    mutate(offenseScore = case_when(
+              possessionTeam == homeTeamAbbr ~ preSnapHomeScore,
+              possessionTeam == visitorTeamAbbr ~ preSnapVisitorScore,
+              TRUE ~ NA_real_),
+           defenseScore = case_when(
+              possessionTeam == homeTeamAbbr ~ preSnapVisitorScore,
+              possessionTeam == visitorTeamAbbr ~ preSnapHomeScore,
+              TRUE ~ NA_real_),
+           offenseAhead = case_when(
+              offenseScore > defenseScore ~ TRUE,
+              TRUE ~ FALSE),
+           tieGame = case_when(
+              offenseScore == defenseScore ~ TRUE,
+              TRUE ~ FALSE)
+           ) %>% 
     select(-c("offenseScore", "defenseScore", "PreSnapWinner", "pff_passCoverage", "qbKneel", "qbSpike", 
               "homeTeamAbbr", "visitorTeamAbbr")) %>% 
-    mutate(
-        territoryOffense = case_when(
-            possessionTeam == yardlineSide ~ TRUE,
-            TRUE ~ FALSE)
-        ) %>% 
+    mutate(territoryOffense = case_when(
+             possessionTeam == yardlineSide ~ TRUE,
+             TRUE ~ FALSE)) %>% 
     filter(pff_manZone == "Man" | pff_manZone == "Zone")
-
-gc()
 
 player_stats <- player_stats %>% 
     select(c("gameId", "playId", "nflId", "teamAbbr", "inMotionAtBallSnap", 
@@ -92,8 +86,6 @@ players <- players %>%
             position %in% c("TE") ~ "TE",
             TRUE ~ "QB")) %>% 
     select(nflId, position, position_group)
-
-gc()
 
 player_stats <- player_stats %>%
     filter(gamePlayId %in% plays$gamePlayId) %>%
@@ -119,12 +111,10 @@ ballsnap <- track_season %>%
     select(-c("displayName", "frameType", "jerseyNumber"))
 
 ballsnap <- ballsnap %>% 
-    left_join(player_stats, by=c("gameId", "playId", "nflId")) %>% 
-    left_join(plays, by=c("gameId", "playId")) %>% 
-    left_join(ball_position, by=c("gameId", "playId", "frameId")) %>% 
+    left_join(player_stats, by = c("gameId", "playId", "nflId")) %>% 
+    left_join(plays, by = c("gameId", "playId")) %>% 
+    left_join(ball_position, by = c("gameId", "playId", "frameId")) %>% 
     select(-c("gamePlayId.x", "gamePlayId.y", "frameId"))
-
-gc()
 ```
 
 
@@ -133,15 +123,14 @@ gc()
 offensive_actions_summary <- ballsnap  %>%
     filter(position_group %in% c("QB", "OL", "RB", "WR", "TE")) %>% 
     group_by(gameId, playId) %>%
-    summarise(
-        any_inMotionAtBallSnap = any(inMotionAtBallSnap == TRUE, na.rm = TRUE),
-        count_inMotionAtBallSnap = sum(inMotionAtBallSnap == TRUE, na.rm = TRUE), 
-        any_shiftSinceLineset = any(shiftSinceLineset == TRUE, na.rm = TRUE), 
-        count_shiftSinceLineset = sum(shiftSinceLineset == TRUE, na.rm = TRUE),
-        any_motionSinceLineset = any(motionSinceLineset == TRUE, na.rm = TRUE),
-        count_motionSinceLineset = sum(motionSinceLineset == TRUE, na.rm = TRUE), 
-        .groups = "drop"
-    )
+    summarize(any_inMotionAtBallSnap = any(inMotionAtBallSnap == TRUE, na.rm = TRUE),
+              count_inMotionAtBallSnap = sum(inMotionAtBallSnap == TRUE, na.rm = TRUE), 
+              any_shiftSinceLineset = any(shiftSinceLineset == TRUE, na.rm = TRUE), 
+              count_shiftSinceLineset = sum(shiftSinceLineset == TRUE, na.rm = TRUE),
+              any_motionSinceLineset = any(motionSinceLineset == TRUE, na.rm = TRUE),
+              count_motionSinceLineset = sum(motionSinceLineset == TRUE, na.rm = TRUE), 
+              .groups = "drop"
+              )
 
 defensive_tracking_data <- ballsnap %>%
     filter(position_group %in% c("DL", "LB", "S", "CB")) %>% 
@@ -164,10 +153,7 @@ responses <- off_motion %>%
     left_join(defensive_movements, by = c("gameId", "playId", "frameId")) %>%
     mutate(distance = sqrt((offense_x - x)^2 + (offense_y - y)^2) ) %>%
     group_by(gameId, playId, nflId.x) %>% 
-    summarise(
-        closest_defender_start = nflId.y[which.min(distance)], 
-        .groups = "drop"
-    )
+    summarise(closest_defender_start = nflId.y[which.min(distance)], .groups = "drop")
 
 debug_data <- off_motion %>%
     left_join(defensive_movements, by = c("gameId", "playId", "frameId"))
@@ -192,5 +178,4 @@ ggplot(plot_data, aes(x = x, y = y, color = side_of_ball)) +
     labs(title = paste("Defensive Response to Offensive Shift: Play", play_to_plot),
          x = "X Position", y = "Y Position") +
     theme_minimal()
-
 ```

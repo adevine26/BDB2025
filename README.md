@@ -6,4 +6,4 @@ The main files should be run in the following order:
 2. Model - Logistic Regression.Rmd
 3. Model Results.Rmd
 
-My full report can be found at the following link: https://www.kaggle.com/code/ameliedevine26/nfl-big-data-bowl-2025-predicting-defensive-schem 
+My full report can be found at the following link: https://www.kaggle.com/code/ameliedevine26/big-data-bowl-2025-predicting-defensive-scheme 

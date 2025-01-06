@@ -20,14 +20,14 @@ library(viridis)
 
 # Read in Data
 ```{r}
-games <- fread("data/games.csv", data.table=FALSE)
-plays <- fread("data/plays.csv", data.table=FALSE)
-players <- fread("data/players.csv", data.table=FALSE)
-player_stats <- fread("data/player_play.csv", data.table=FALSE)
+games <- fread("..data/games.csv", data.table = FALSE)
+plays <- fread("..data/plays.csv", data.table = FALSE)
+players <- fread("..data/players.csv", data.table = FALSE)
+player_stats <- fread("..data/player_play.csv", data.table = FALSE)
 
 track_season <- data.table()
 for(i in seq(1,9)) {
-    temp <- fread(paste0("data/tracking_week_", i, ".csv"))
+    temp <- fread(paste0("..data/tracking_week_", i, ".csv"))
     track_season <- rbind(temp, track_season)
 }
 
@@ -70,14 +70,9 @@ unique(player_stats$pff_defensiveCoverageAssignment)
 
 players_stats <- player_stats %>% 
     left_join(players, by="nflId") %>% 
-    mutate(side_of_ball = ifelse(position == "G", "Offense", 
-                                 ifelse(position == "C", "Offense", 
-                                        ifelse(position == "WR", "Offense",
-                                               ifelse(position == "T", "Offense",
-                                                      ifelse(position == "QB", "Offense",
-                                                             ifelse(position == "RB", "Offense",
-                                                                    ifelse(position == "TE", "Offense",
-                                                                           "Defense"))))))))
+    mutate(side_of_ball = case_when(
+             position %in% c("G", "C", "T", "WR", "QB", "RB", "TE") ~ "Offense", 
+             TRUE ~ "Defense"))
 
 def_coverages <- players_stats %>% 
     filter(!is.na(pff_defensiveCoverageAssignment)) %>% 
@@ -112,17 +107,15 @@ defense_counts <- plays %>%
     count(pff_manZone)
 
 defense_counts <- defense_counts %>%
-  mutate(percentage = n / sum(n) * 100)
+    mutate(percentage = n / sum(n) * 100)
 
-defense_dist <- ggplot(defense_counts, aes(x = "", y = n, fill = pff_manZone)) +
+ggplot(defense_counts, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "Distribution of Defense", 
          fill = "Defense Type") +
-    scale_fill_manual(values = c("Man" = "#1e3d58",
-                                 "Zone" = "#43b0f1",
-                                 "Other" = "#057dcd",
-                                 "NA" = "#f9f6f0"),
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1",
+                                 "Other" = "#057dcd", "NA" = "#f9f6f0"),
                       na.value = "#f9f6f0") +
     theme_void() +
     theme(legend.position = "right") +
@@ -130,8 +123,6 @@ defense_dist <- ggplot(defense_counts, aes(x = "", y = n, fill = pff_manZone)) +
                   vjust = ifelse(is.na(pff_manZone), -0.8, 0.5),
                   hjust = ifelse(is.na(pff_manZone), 0.15, 0.5)),
               position = position_stack(vjust = 0.5))
-
-ggsave("defense_dist_pie_chart.jpeg", plot = defense_dist)
 ```
 
 # FILTER FOR JUST MAN & ZONE
@@ -232,6 +223,8 @@ def_plot3s <- ggplot(def_3rd_short, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "3rd & Short") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "left")+
     geom_text(aes(label = paste0(round(percentage, 1), "%")), 
@@ -240,6 +233,8 @@ def_plot3m <- ggplot(def_3rd_medium, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "3rd & Medium") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "none")+
     geom_text(aes(label = paste0(round(percentage, 1), "%")), 
@@ -248,6 +243,8 @@ def_plot3l <- ggplot(def_3rd_long, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "3rd & Long") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "none")+
     geom_text(aes(label = paste0(round(percentage, 1), "%")), 
@@ -275,6 +272,8 @@ def_plot4s <- ggplot(def_4th_short, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "4th & Short") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "left")+
     geom_text(aes(label = paste0(round(percentage, 1), "%")), 
@@ -283,6 +282,8 @@ def_plot4m <- ggplot(def_4th_medium, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "4th & Medium") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "none")+
     geom_text(aes(label = paste0(round(percentage, 1), "%")), 
@@ -291,6 +292,8 @@ def_plot4l <- ggplot(def_4th_long, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "4th & Long") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "none") +
     geom_text(aes(label = paste0(round(percentage, 1), "%")), 
@@ -304,8 +307,7 @@ def_plot4l <- ggplot(def_4th_long, aes(x = "", y = n, fill = pff_manZone)) +
 (def_plot3s | def_plot3m | def_plot3l) / (def_plot4s | def_plot4m | def_plot4l) +
     plot_annotation(title = "Distribution of Defensive Schemes on Late Downs") +
     geom_text(aes(label = paste0(round(percentage, 1), "%")), 
-            position = position_stack(vjust = 0.5))
-
+              position = position_stack(vjust = 0.5))
 ```
 
 ## number of defensive players and distribution of defense
@@ -314,29 +316,27 @@ plays <- plays %>%
     filter(pff_manZone %in% c("Man", "Zone"),
            qbSpike != TRUE,
            qbKneel != 1) %>% 
-    mutate(gamePlayId = paste0(gameId, playId)) %>% ## drops to only 8845 ?
-    select(c("gameId", "playId", "gamePlayId", "pff_manZone"))
+    mutate(gamePlayId = paste0(gameId, playId)) %>% 
+    select(c("gameId", "playId", "gamePlayId", "pff_manZone")) # drops to 8845 plays
 
 player_stats <- player_stats %>% 
     mutate(gamePlayId = paste0(gameId, playId))
 
 player_stats <- player_stats %>%
     filter(gamePlayId %in% plays$gamePlayId) %>%
-    left_join(players, by=c("nflId")) 
-rm(players)
+    left_join(players, by = c("nflId")) 
+
 player_stats <- player_stats %>% 
     select(c("gameId", "playId", "nflId", "gamePlayId", "position"))
-gc()
 
 defense <- track_season %>%
     filter(event == "ball_snap", 
            !is.na(nflId)) %>% 
     select(c("gameId", "playId", "nflId")) 
-gc()
 
 defense <- defense %>% 
-    left_join(player_stats, by=c("gameId", "playId", "nflId")) %>% 
-    left_join(plays, by=c("gameId", "playId")) %>% 
+    left_join(player_stats, by = c("gameId", "playId", "nflId")) %>% 
+    left_join(plays, by = c("gameId", "playId")) %>% 
     select(-c("gamePlayId.x", "gamePlayId.y")) %>% 
     mutate(position_group = case_when(
             position %in% c("ILB", "OLB", "MLB", "LB") ~ "LB", 
@@ -348,37 +348,32 @@ defense <- defense %>%
             position %in% c("WR") ~ "WR",
             position %in% c("TE") ~ "TE",
             TRUE ~ "QB"))
+
 defense <- defense %>% 
     filter(position_group %in% c("DL", "CB", "S", "LB")) %>% 
-    add_count(gameId, playId, position_group, name="player_count")
-gc()
-
+    add_count(gameId, playId, position_group, name = "player_count")
 
 position_counts <- defense %>%
   group_by(gameId, playId, position_group) %>%
   summarise(num_players = n(), .groups = "drop")  
+
 position_counts_wide <- position_counts %>%
-  pivot_wider(
-    names_from = position_group,
-    values_from = num_players,
-    names_prefix = "num_",
-    values_fill = 0  # Fill missing positions with 0
-  )
-gc()
+    pivot_wider(
+        names_from = position_group,
+        values_from = num_players,
+        names_prefix = "num_",
+        values_fill = 0 
+        )
 
 plays <- plays %>% 
     left_join(position_counts_wide, by=c("gameId", "playId"))
 
 ggplot(plays, aes(x = num_DL, fill = pff_manZone)) +
-  geom_bar(position = "dodge", color = "black") +
-  # scale_fill_manual(values = c("Zone" = "skyblue", "Man" = "orange")) +
-  labs(
-    title = "Number of Defensive Linemen by Coverage Type",
-    x = "Number of Defensive Linemen",
-    y = "Count",
-    fill = "Coverage Type"
-  ) +
-  theme_minimal()
+    geom_bar(position = "dodge", color = "black") +
+    labs(title = "Number of Defensive Linemen by Coverage Type",
+         x = "Number of Defensive Linemen",
+         y = "Count",
+         fill = "Coverage Type"
+         ) +
+    theme_minimal()
 ```
-
-

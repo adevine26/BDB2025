@@ -7,7 +7,6 @@ output: html_document
 
 ## libraries
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggplot2)
 library(data.table)
@@ -20,22 +19,21 @@ library(MLmetrics)
 
 ## read in data
 ```{r}
-final_data <- fread("data/final_data.csv", data.table=FALSE)
+final_data <- fread("data/final_data.csv", data.table = FALSE)
 ```
 
 ## factor man/zone
 ```{r}
 final_data <- final_data %>% 
     mutate(pff_manZone = case_when(
-        pff_manZone == "Man" ~ 1,
-        TRUE ~ 0
-    ))
+             pff_manZone == "Man" ~ 1,
+             TRUE ~ 0))
 ```
 
 ## decide to keep actual deltaX, deltaY, distance values or binary indicators
 ```{r}
 final_data <- final_data %>%
-  select(-contains("avgDeltaX"), -contains("avgDeltaY"), -contains("avgDistanceSinceLineset"))
+    select(-contains("avgDeltaX"), -contains("avgDeltaY"), -contains("avgDistanceSinceLineset"))
 
 # ## binary indicators
 # final_data <- final_data %>%
@@ -61,29 +59,27 @@ final_data$pff_manZone <- factor(final_data$pff_manZone)
 final_data$receiverAlignment <- factor(final_data$receiverAlignment)
 final_data$quarter <- factor(final_data$quarter)
 
-final_data <- final_data %>% mutate(across(everything(), ~ replace_na(., 0)))
-
-gc()
+final_data <- final_data %>% 
+    mutate(across(everything(), ~ replace_na(., 0)))
 ```
 
 
 ## here split training/testing
 ```{r}
 set.seed(1223)
+sample <- sample(c(TRUE, FALSE), nrow(final_data), replace = TRUE, prob = c(0.8,0.2))
 
-sample <- sample(c(TRUE, FALSE), nrow(final_data), replace=TRUE, prob=c(0.8,0.2))
 train <- final_data[sample, ]
 test <- final_data[!sample, ] 
 ```
 
 # model
 ```{r}
-exclude <- c("gamePlayId", "pff_manZone")
-
-variables <- setdiff(names(train), exclude) 
+drop <- c("gamePlayId", "pff_manZone")
+variables <- setdiff(names(train), drop) 
 formula <- as.formula(paste("pff_manZone ~", paste(variables, collapse = " + ")))
 
-model <- glm(formula, family="binomial", data=train)
+model <- glm(formula, family = "binomial", data = train)
 
 options(scipen=999)
 summary(model)
@@ -98,17 +94,17 @@ vif_output <- vif(model)
 ## adjust model due to high vif
 ```{r}
 vif_columns_to_remove <- vif_output %>%
-  as.data.frame() %>%
-  filter(GVIF > 5) %>%
-  rownames()
+    as.data.frame() %>%
+    filter(GVIF > 5) %>%
+    rownames()
 
 train <- train[, !names(train) %in% vif_columns_to_remove]
 test <- test[, !names(test) %in% vif_columns_to_remove]
 
-pred_vars <- setdiff(names(train), exclude) 
-formula <- as.formula(paste("pff_manZone ~", paste(pred_vars, collapse = " + ")))
+variables <- setdiff(names(train), drop) 
+formula <- as.formula(paste("pff_manZone ~", paste(variables, collapse = " + ")))
 
-model <- glm(formula, family="binomial", data=train)
+model <- glm(formula, family = "binomial", data = train)
 
 options(scipen=999)
 summary(model)
@@ -119,7 +115,7 @@ summary(model)
 ```{r}
 sig_model <- glm(pff_manZone~yardsToGo+territoryOffense+ball_y+num_CB+CB_depth+LB_depth+S_depth+
                      CB_distanceShift+LB_distanceShift, 
-             family="binomial", data=train)
+             family = "binomial", data = train)
 
 options(scipen=999)
 summary(sig_model)
@@ -129,7 +125,7 @@ summary(sig_model)
 ```{r}
 sig_model2 <- glm(pff_manZone~yardsToGo+territoryOffense+num_CB+CB_depth+LB_depth+S_depth+
                       CB_distanceShift+LB_distanceShift, 
-             family="binomial", data=train)
+             family = "binomial", data = train)
 
 options(scipen=999)
 summary(sig_model2)
@@ -157,7 +153,7 @@ residuals <- residuals(model, type = "deviance")
 plot(residuals)
 
 step_residuals <- residuals(step_model, type = "deviance")
-plot(step_residuals) # looks exact same
+plot(step_residuals) # very similar
 
 sig_residuals <- residuals(sig_model, type = "deviance")
 plot(sig_residuals) # all very similar
@@ -230,6 +226,9 @@ plot(sig_roc_curve) # curve is alright
 auc(sig_roc_curve) # 0.8183
 
 sig_roc_curve2 <- roc(test$pff_manZone, sig_predictions2)
+plot(sig_roc_curve2)
+auc(sig_roc_curve2) # 0.8181
+
 plot(
   sig_roc_curve2,
   main = "ROC Curve",
@@ -238,34 +237,35 @@ plot(
   xlab = "False Positive Rate", 
   ylab = "True Positive Rate",
   xlim = c(1, 0)
-)
-
-auc(sig_roc_curve2) # 0.8181
+) ## prettier roc curve
+```
 
 ## show threshold of 0.5 is best
+```{r}
 coords(sig_roc_curve2, "best", ret = "threshold")
 thresholds <- seq(0, 1, by = 0.1)
 metrics <- data.frame(
     Threshold = thresholds,
-    Accuracy = sapply(thresholds, function(thresh) 
-        mean(ifelse(sig_predictions2 >= thresh, 1, 0) == test$pff_manZone)))
+    Accuracy = sapply(thresholds, 
+                      function(thresh) mean(ifelse(sig_predictions2 >= thresh, 1, 0) == test$pff_manZone)))
 
 ggplot(metrics, aes(x = Threshold)) +
-  geom_line(aes(y = Accuracy, color = "Accuracy")) +
-  labs(title = "Metric Performance Across Thresholds", y = "Metric Value") 
+    geom_line(aes(y = Accuracy, color = "Accuracy")) +
+    labs(title = "Metric Performance Across Thresholds", y = "Metric Value") 
 ```
 
 ## magnitude of coefficients
 ```{r}
-coef_df <- data.frame(
+coefficients <- data.frame(
     Variable = names(coef(sig_model2)),
     Estimate = coef(sig_model2),
     SE = sqrt(diag(vcov(sig_model2)))
 )
-coef_df$LowerCI <- coef_df$Estimate - 1.96 * coef_df$SE
-coef_df$UpperCI <- coef_df$Estimate + 1.96 * coef_df$SE
 
-ggplot(coef_df, aes(x = Estimate, y = Variable)) +
+coefficients$LowerCI <- coefficients$Estimate - 1.96 * coefficients$SE
+coefficients$UpperCI <- coefficients$Estimate + 1.96 * coefficients$SE
+
+ggplot(coefficients, aes(x = Estimate, y = Variable)) +
     geom_point() +
     geom_errorbarh(aes(xmin = LowerCI, xmax = UpperCI), height = 0.2) +
     labs(title = "Logistic Regression Coefficients",
