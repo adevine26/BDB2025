@@ -1,6 +1,6 @@
 # BDB2025
 
-This is the code used for my NFL Big Data Bowl 2025 project. For this, I created a model predicting defensive schemes based on various game, play, player, and tracking metrics. 
+This is the code I created and used for my NFL Big Data Bowl 2025 project. For this, I created a model predicting defensive schemes based on various game, play, player, and tracking metrics. 
 The main files should be run in the following order:
 1. Feature Engineering.Rmd
 2. Model - Logistic Regression.Rmd
