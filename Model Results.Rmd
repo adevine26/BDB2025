@@ -25,23 +25,29 @@ ggplot(final, aes(x = "", y = n, fill = pff_manZone)) +
     coord_polar("y") + 
     labs(title = "Distribution of Defense", 
          fill = "Defense Type") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
     theme_void() +
     theme(legend.position = "right") +
-    geom_text(aes(label = paste0(round(percentage, 1), "%")), 
+    geom_text(aes(label = paste0(round(percentage, 1), "%"),
+                  color = "white"), 
             position = position_stack(vjust = 0.5))
 ```
 
 ## delta XY / distance plots
 ```{r}
 ggplot(deltas, aes(x = distanceSinceLineset, color = position_group)) +
-  geom_density(size = 1, alpha = 0.6) +
-  theme_minimal() +
-  facet_wrap(~ pff_manZone, labeller = label_both) +
-  labs(title = "Density of Overall Movement (deltaDistance) by Defensive Scheme",
-       x = "deltaDistance (Overall Movement)",
-       y = "Density",
-       color = "Position Group") +
-  theme(legend.position = "top")
+    geom_density(size = 1, alpha = 0.6) +
+    facet_wrap(~ pff_manZone, labeller = label_both) +
+    scale_color_manual(values = c("LB" = "#90adc6",
+                                  "DL" = "#787e8a",
+                                  "S" = "#fad02c", 
+                                  "CB" = "#333652")) +
+    labs(title = "Density of Movement Since Lineset by Defensive Scheme",
+         x = "Movement (deltaDistance)",
+         y = "Density",
+         color = "Position Group") +
+    theme_minimal() +
+    theme(legend.position = "top")
 ```
 
 ## use testing set

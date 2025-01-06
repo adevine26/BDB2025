@@ -8,12 +8,13 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(data.table)
 library(nflverse)
 library(ggplot2)
 library(patchwork)
 library(stringr)
 library(caTools)
-library(data.table)
+library(viridis)
 ```
 
 
@@ -117,11 +118,18 @@ defense_dist <- ggplot(defense_counts, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "Distribution of Defense", 
-         fill = "Defense Type") + 
+         fill = "Defense Type") +
+    scale_fill_manual(values = c("Man" = "#1e3d58",
+                                 "Zone" = "#43b0f1",
+                                 "Other" = "#057dcd",
+                                 "NA" = "#f9f6f0"),
+                      na.value = "#f9f6f0") +
     theme_void() +
     theme(legend.position = "right") +
-    geom_text(aes(label = paste0(round(percentage, 1), "%")), 
-            position = position_stack(vjust = 0.5))
+    geom_text(aes(label = paste0(round(percentage, 1), "%"), 
+                  vjust = ifelse(is.na(pff_manZone), -0.8, 0.5),
+                  hjust = ifelse(is.na(pff_manZone), 0.15, 0.5)),
+              position = position_stack(vjust = 0.5))
 
 ggsave("defense_dist_pie_chart.jpeg", plot = defense_dist)
 ```
@@ -154,37 +162,50 @@ def_plot1 <- ggplot(defense_1stdown, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "1st Down") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "left") +
-    geom_text(aes(label = paste0(round(percentage, 1), "%")),
+    geom_text(aes(label = paste0(round(percentage, 1), "%"),
+                  color = "white"),
               position = position_stack(vjust = 0.5))
 
 def_plot2 <- ggplot(defense_2nddown, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "2nd Down") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "none") +
-    geom_text(aes(label = paste0(round(percentage, 1), "%")),
-              position = position_stack(vjust = 0.5))
+    geom_text(aes(label = paste0(round(percentage, 1), "%"),
+                  color = "white"),
+              position = position_stack(vjust = 0.5)) 
 
 def_plot3 <- ggplot(defense_3rddown, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
-    labs(title = "3rd Down") + 
+    labs(title = "3rd Down") +
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "none") +
-    geom_text(aes(label = paste0(round(percentage, 1), "%")),
-              position = position_stack(vjust = 0.5))
+    geom_text(aes(label = paste0(round(percentage, 1), "%"), 
+                  color = "white"),
+              position = position_stack(vjust = 0.5)) 
 
 def_plot4 <- ggplot(defense_4thdown, aes(x = "", y = n, fill = pff_manZone)) +
     geom_bar(stat = "identity", width = 1) + 
     coord_polar("y") + 
     labs(title = "4th Down") + 
+    scale_fill_manual(values = c("Man" = "#1e3d58", "Zone" = "#43b0f1")) +
+    scale_color_identity() +
     theme_void() +
     theme(legend.position = "none") +
-    geom_text(aes(label = paste0(round(percentage, 1), "%")),
+    geom_text(aes(label = paste0(round(percentage, 1), "%"),
+                  color = "white"),
               position = position_stack(vjust = 0.5))
+
 
 (def_plot1 | def_plot2) / (def_plot3 | def_plot4) +
     plot_annotation(title = "Defensive Schemes by Down") +
