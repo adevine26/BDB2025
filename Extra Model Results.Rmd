@@ -1,5 +1,5 @@
 ---
-title: "Model Results"
+title: "Extra Model Results"
 author: "Amelie Devine"
 date: "2025-01-01"
 output: html_document
@@ -40,7 +40,7 @@ ggplot(deltas, aes(x = distanceSinceLineset, color = position_group)) +
     facet_wrap(~ pff_manZone, labeller = label_both) +
     scale_color_manual(values = c("LB" = "#90adc6", "DL" = "#787e8a",
                                   "S" = "#fad02c", "CB" = "#333652")) +
-    labs(title = "Density of Movement Since Lineset by Defensive Scheme",
+    labs(title = "Density of Movement Since Line Set by Defensive Scheme",
          x = "Movement (deltaDistance)",
          y = "Density",
          color = "Position Group") +
